@@ -4,6 +4,8 @@ A small production-style React + TypeScript project created as a code sample for
 
 It connects to the TMDB API to search for movies and display posters, ratings and release dates.
 
+[![Tests](https://github.com/baiser92/movie_example/actions/workflows/ci.yml/badge.svg)](https://github.com/baiser92/movie_example/actions/workflows/ci.yml)
+
 ## Why TMDB?
 
 TMDB provides movie and TV metadata through an API. A free developer API key can be used for non-commercial projects with the required attribution.
