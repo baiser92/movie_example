@@ -6,14 +6,22 @@ It connects to the TMDB API to search for movies and display posters, ratings an
 
 [![Tests](https://github.com/baiser92/movie_example/actions/workflows/ci.yml/badge.svg)](https://github.com/baiser92/movie_example/actions/workflows/ci.yml)
 
+**Live demo:** [movie-sample-mauve.vercel.app](https://movie-sample-mauve.vercel.app) — no setup or API key needed, just open the link.
+
 ## Why TMDB?
 
 TMDB provides movie and TV metadata through an API. A free developer API key can be used for non-commercial projects with the required attribution.
 
 ## Setup
 
-1. Create a TMDB account and request an API key / API Read Access Token.
-2. Create a `.env` file:
+Only needed if you want to run it locally — the live demo linked above already works without any of this.
+
+1. Create a free [TMDB account](https://www.themoviedb.org/signup), then go to **Settings → API** ([themoviedb.org/settings/api](https://www.themoviedb.org/settings/api)) and request an API Read Access Token (the long JWT-style one, not the short v3 key).
+2. Copy `.env.example` to `.env` and paste your token in:
+
+```bash
+cp .env.example .env
+```
 
 ```env
 VITE_TMDB_ACCESS_TOKEN=your_token_here
@@ -35,3 +43,7 @@ npm run dev
 - `App.tsx` — page composition
 
 The API layer is kept separate from the UI so the data source can be replaced without changing the components.
+
+## Trade-offs
+
+This is a client-only app: it calls the TMDB API directly from the browser using a `VITE_`-prefixed token, which Vite inlines into the public JS bundle at build time. That's fine for a read-only, non-commercial TMDB token (worst case someone burns your request quota), but it's not a pattern to reuse for a token that grants write access or costs money per request. A production app with a paid or sensitive API key would proxy the request through a backend (e.g. a serverless function) so the key never reaches the client.
