@@ -1,6 +1,15 @@
 import { Link, useParams } from 'react-router-dom';
 import { useMovieDetails } from '../hooks/useMovieDetails';
 
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('');
+}
+
 export default function MovieDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { movie, loading, error } = useMovieDetails(id);
@@ -20,21 +29,34 @@ export default function MovieDetailPage() {
 
       {movie && (
         <article className="detail">
-          {movie.posterPath ? (
-            <img src={movie.posterPath} alt={`${movie.title} poster`} />
-          ) : (
-            <div className="poster-placeholder">No poster</div>
-          )}
+          <div className="detail-poster">
+            {movie.posterPath ? (
+              <img src={movie.posterPath} alt={`${movie.title} poster`} />
+            ) : (
+              <div className="poster-placeholder" role="img" aria-label="No poster available">
+                <span aria-hidden="true">{movie.title.charAt(0).toUpperCase()}</span>
+              </div>
+            )}
+          </div>
 
           <div className="content">
             <h1>{movie.title}</h1>
             {movie.tagline && <p className="tagline">{movie.tagline}</p>}
             <p className="meta">
-              {movie.releaseDate || 'Release date unknown'} · ⭐ {movie.rating.toFixed(1)}
-              {movie.runtime ? ` · ${movie.runtime} min` : ''}
+              <span>{movie.releaseDate || 'Release date unknown'}</span>
+              {movie.runtime ? <span>{movie.runtime} min</span> : null}
+              <span className="rating-badge">★ {movie.rating.toFixed(1)}</span>
             </p>
-            {movie.genres.length > 0 && <p className="genres">{movie.genres.join(', ')}</p>}
-            <p>{movie.overview || 'No overview available.'}</p>
+            {movie.genres.length > 0 && (
+              <ul className="genres">
+                {movie.genres.map((genre) => (
+                  <li key={genre} className="genre-pill">
+                    {genre}
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p className="overview">{movie.overview || 'No overview available.'}</p>
 
             {movie.cast.length > 0 && (
               <>
@@ -42,8 +64,13 @@ export default function MovieDetailPage() {
                 <ul className="cast">
                   {movie.cast.map((member) => (
                     <li key={member.id}>
-                      <strong>{member.name}</strong>
-                      {member.character ? ` as ${member.character}` : ''}
+                      <span className="cast-avatar" aria-hidden="true">
+                        {getInitials(member.name)}
+                      </span>
+                      <span className="cast-name">{member.name}</span>
+                      {member.character && (
+                        <span className="cast-character">{member.character}</span>
+                      )}
                     </li>
                   ))}
                 </ul>

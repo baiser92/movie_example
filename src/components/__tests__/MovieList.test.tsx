@@ -23,7 +23,7 @@ describe('MovieList', () => {
         <MovieList movies={movies} />
       </MemoryRouter>,
     );
-    expect(screen.getByText('A')).toBeInTheDocument();
-    expect(screen.getByText('B')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'A' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'B' })).toBeInTheDocument();
   });
 });

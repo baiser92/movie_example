@@ -28,7 +28,7 @@ describe('MovieCard', () => {
 
     expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Test Movie');
     expect(screen.getByText(/Release date unknown|2020-01-01/)).toBeInTheDocument();
-    expect(screen.getByText('No poster')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /no poster available/i })).toBeInTheDocument();
     expect(screen.getByText(/7.3/)).toBeInTheDocument();
   });
 
