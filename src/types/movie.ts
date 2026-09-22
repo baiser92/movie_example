@@ -1,3 +1,6 @@
+import { z } from 'zod';
+import { movieDetailResponseSchema, movieSearchResponseSchema } from '../api/schemas';
+
 export type Movie = {
   id: number;
   title: string;
@@ -13,18 +16,7 @@ export type MovieSearchResult = {
   totalPages: number;
 };
 
-export type MovieSearchResponse = {
-  page: number;
-  total_pages: number;
-  results: Array<{
-    id: number;
-    title: string;
-    overview: string;
-    poster_path: string | null;
-    release_date: string;
-    vote_average: number;
-  }>;
-};
+export type MovieSearchResponse = z.infer<typeof movieSearchResponseSchema>;
 
 export type CastMember = {
   id: number;
@@ -39,17 +31,4 @@ export type MovieDetail = Movie & {
   cast: CastMember[];
 };
 
-export type MovieDetailResponse = {
-  id: number;
-  title: string;
-  overview: string;
-  poster_path: string | null;
-  release_date: string;
-  vote_average: number;
-  tagline: string;
-  runtime: number | null;
-  genres: Array<{ id: number; name: string }>;
-  credits?: {
-    cast: Array<{ id: number; name: string; character: string }>;
-  };
-};
+export type MovieDetailResponse = z.infer<typeof movieDetailResponseSchema>;

@@ -61,6 +61,21 @@ describe('searchMovies', () => {
 
     await expect(searchMovies('x', 1)).rejects.toThrow('TMDB request failed: 401');
   });
+
+  it('throws when the response does not match the expected shape', async () => {
+    const malformedResponse = {
+      page: 1,
+      total_pages: 5,
+      results: [{ id: 100, title: 'Mocked' }],
+    };
+
+    const fetchMock = vi.fn(() =>
+      Promise.resolve({ ok: true, json: () => Promise.resolve(malformedResponse) }),
+    ) as unknown as typeof fetch;
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(searchMovies('x', 1)).rejects.toThrow(/did not match the expected shape/);
+  });
 });
 
 describe('getMovieDetails', () => {

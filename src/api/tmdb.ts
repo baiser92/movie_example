@@ -1,9 +1,6 @@
-import {
-  MovieDetail,
-  MovieDetailResponse,
-  MovieSearchResponse,
-  MovieSearchResult,
-} from '../types/movie';
+import { z } from 'zod';
+import { MovieDetail, MovieSearchResult } from '../types/movie';
+import { movieDetailResponseSchema, movieSearchResponseSchema } from './schemas';
 
 const BASE_URL = 'https://api.themoviedb.org/3';
 const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
@@ -20,7 +17,7 @@ function getToken(): string {
   return token;
 }
 
-async function tmdbFetch<T>(url: URL, signal?: AbortSignal): Promise<T> {
+async function tmdbFetch<T>(url: URL, schema: z.ZodType<T>, signal?: AbortSignal): Promise<T> {
   const response = await fetch(url, {
     headers: {
       Authorization: `Bearer ${getToken()}`,
@@ -32,7 +29,14 @@ async function tmdbFetch<T>(url: URL, signal?: AbortSignal): Promise<T> {
     throw new Error(`TMDB request failed: ${response.status}`);
   }
 
-  return response.json();
+  const json = await response.json();
+  const result = schema.safeParse(json);
+
+  if (!result.success) {
+    throw new Error(`TMDB response did not match the expected shape: ${result.error.message}`);
+  }
+
+  return result.data;
 }
 
 export async function searchMovies(
@@ -46,7 +50,7 @@ export async function searchMovies(
   url.searchParams.set('include_adult', 'false');
   url.searchParams.set('page', String(page));
 
-  const data = await tmdbFetch<MovieSearchResponse>(url, signal);
+  const data = await tmdbFetch(url, movieSearchResponseSchema, signal);
 
   return {
     movies: data.results.map((movie) => ({
@@ -70,7 +74,7 @@ export async function getMovieDetails(
   url.searchParams.set('language', 'en-US');
   url.searchParams.set('append_to_response', 'credits');
 
-  const movie = await tmdbFetch<MovieDetailResponse>(url, signal);
+  const movie = await tmdbFetch(url, movieDetailResponseSchema, signal);
 
   return {
     id: movie.id,
