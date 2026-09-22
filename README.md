@@ -34,13 +34,21 @@ npm install
 npm run dev
 ```
 
+## Features
+
+- Debounced, cancellable movie search
+- Movie detail page (tagline, genres, runtime, cast) with client-side routing
+- Paginated search results
+- Favorites, persisted to `localStorage` and kept in sync across the app
+
 ## Architecture
 
 - `api/` — external API communication
 - `components/` — reusable UI components
 - `hooks/` — data-fetching/state logic
+- `pages/` — route-level views
 - `types/` — domain types
-- `App.tsx` — page composition
+- `App.tsx` — routes and page composition
 
 The API layer is kept separate from the UI so the data source can be replaced without changing the components.
 

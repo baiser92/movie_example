@@ -3,11 +3,12 @@ import MovieCard from './MovieCard';
 
 type MovieListProps = {
   movies: Movie[];
+  emptyMessage?: string;
 };
 
-export default function MovieList({ movies }: MovieListProps) {
+export default function MovieList({ movies, emptyMessage = 'No movies found.' }: MovieListProps) {
   if (!movies.length) {
-    return <p className="empty">No movies found.</p>;
+    return <p className="empty">{emptyMessage}</p>;
   }
 
   return (
