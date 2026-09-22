@@ -1,6 +1,6 @@
 # Movie Explorer — React + TypeScript
 
-A small production-style React + TypeScript project created as a code sample for
+A small production-style React + TypeScript project built as a code sample for my portfolio, showing how I structure a client app end to end: typed API layer, debounced/cancellable search, tests, CI, and linting.
 
 It connects to the TMDB API to search for movies and display posters, ratings and release dates.
 
