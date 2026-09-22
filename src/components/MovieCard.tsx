@@ -1,4 +1,4 @@
-import { Movie } from "../types/movie";
+import { Movie } from '../types/movie';
 
 type MovieCardProps = {
   movie: Movie;
@@ -16,10 +16,9 @@ export default function MovieCard({ movie }: MovieCardProps) {
       <div className="content">
         <h2>{movie.title}</h2>
         <p className="meta">
-          {movie.releaseDate || "Release date unknown"} · ⭐{" "}
-          {movie.rating.toFixed(1)}
+          {movie.releaseDate || 'Release date unknown'} · ⭐ {movie.rating.toFixed(1)}
         </p>
-        <p>{movie.overview || "No overview available."}</p>
+        <p>{movie.overview || 'No overview available.'}</p>
       </div>
     </article>
   );

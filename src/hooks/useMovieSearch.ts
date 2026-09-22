@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
-import { searchMovies } from "../api/tmdb";
-import { Movie } from "../types/movie";
+import { useEffect, useState } from 'react';
+import { searchMovies } from '../api/tmdb';
+import { Movie } from '../types/movie';
 
 type SearchState = {
   movies: Movie[];
@@ -14,7 +14,7 @@ export function useMovieSearch(query: string): SearchState {
   const [state, setState] = useState<SearchState>({
     movies: [],
     loading: false,
-    error: null
+    error: null,
   });
 
   useEffect(() => {
@@ -30,7 +30,7 @@ export function useMovieSearch(query: string): SearchState {
     setState((current) => ({
       ...current,
       loading: true,
-      error: null
+      error: null,
     }));
 
     const timeoutId = window.setTimeout(async () => {
@@ -38,15 +38,14 @@ export function useMovieSearch(query: string): SearchState {
         const movies = await searchMovies(normalizedQuery, controller.signal);
         setState({ movies, loading: false, error: null });
       } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") {
+        if (error instanceof DOMException && error.name === 'AbortError') {
           return;
         }
 
         setState({
           movies: [],
           loading: false,
-          error:
-            error instanceof Error ? error.message : "Something went wrong."
+          error: error instanceof Error ? error.message : 'Something went wrong.',
         });
       }
     }, DEBOUNCE_MS);

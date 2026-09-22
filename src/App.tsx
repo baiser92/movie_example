@@ -1,9 +1,9 @@
-import { useState } from "react";
-import MovieList from "./components/MovieList";
-import { useMovieSearch } from "./hooks/useMovieSearch";
+import { useState } from 'react';
+import MovieList from './components/MovieList';
+import { useMovieSearch } from './hooks/useMovieSearch';
 
 export default function App() {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState('');
   const { movies, loading, error } = useMovieSearch(query);
 
   return (
@@ -22,12 +22,14 @@ export default function App() {
       />
 
       {loading && <p>Searching...</p>}
-      {error && <p className="error" role="alert">{error}</p>}
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
       {!loading && !error && <MovieList movies={movies} />}
 
-      <footer>
-        TMDB API
-      </footer>
+      <footer>TMDB API</footer>
     </main>
   );
 }
