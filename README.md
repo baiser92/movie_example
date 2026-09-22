@@ -8,6 +8,12 @@ It connects to the TMDB API to search for movies and display posters, ratings an
 
 **Live demo:** [movie-sample-mauve.vercel.app](https://movie-sample-mauve.vercel.app) — no setup or API key needed, just open the link.
 
+## Screenshots
+
+| Search                                             | Movie detail                                     |
+| -------------------------------------------------- | ------------------------------------------------ |
+| ![Search results grid](docs/screenshot-search.png) | ![Movie detail page](docs/screenshot-detail.png) |
+
 ## Why TMDB?
 
 TMDB provides movie and TV metadata through an API. A free developer API key can be used for non-commercial projects with the required attribution.
