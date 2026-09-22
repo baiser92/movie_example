@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import MovieList from '../MovieList';
 
 const movies = [
@@ -8,12 +9,20 @@ const movies = [
 
 describe('MovieList', () => {
   it('shows empty message when no movies', () => {
-    render(<MovieList movies={[]} />);
+    render(
+      <MemoryRouter>
+        <MovieList movies={[]} />
+      </MemoryRouter>,
+    );
     expect(screen.getByText(/No movies found/)).toBeInTheDocument();
   });
 
   it('renders a list of movies', () => {
-    render(<MovieList movies={movies} />);
+    render(
+      <MemoryRouter>
+        <MovieList movies={movies} />
+      </MemoryRouter>,
+    );
     expect(screen.getByText('A')).toBeInTheDocument();
     expect(screen.getByText('B')).toBeInTheDocument();
   });

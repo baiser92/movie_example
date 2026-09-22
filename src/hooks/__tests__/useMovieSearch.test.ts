@@ -30,16 +30,22 @@ afterEach(() => {
 
 describe('useMovieSearch', () => {
   it('returns empty state immediately for a blank query, without calling the API', () => {
-    const { result } = renderHook(() => useMovieSearch('   '));
+    const { result } = renderHook(() => useMovieSearch('   ', 1));
 
-    expect(result.current).toEqual({ movies: [], loading: false, error: null });
+    expect(result.current).toEqual({
+      movies: [],
+      loading: false,
+      error: null,
+      page: 1,
+      totalPages: 1,
+    });
     expect(mockedSearchMovies).not.toHaveBeenCalled();
   });
 
   it('debounces rapid keystrokes into a single request for the final query', async () => {
-    mockedSearchMovies.mockResolvedValue([movie]);
+    mockedSearchMovies.mockResolvedValue({ movies: [movie], page: 1, totalPages: 1 });
 
-    const { rerender } = renderHook(({ query }) => useMovieSearch(query), {
+    const { rerender } = renderHook(({ query }) => useMovieSearch(query, 1), {
       initialProps: { query: 'b' },
     });
 
@@ -54,17 +60,17 @@ describe('useMovieSearch', () => {
     });
 
     expect(mockedSearchMovies).toHaveBeenCalledTimes(1);
-    expect(mockedSearchMovies).toHaveBeenCalledWith('batman', expect.any(AbortSignal));
+    expect(mockedSearchMovies).toHaveBeenCalledWith('batman', 1, expect.any(AbortSignal));
   });
 
   it('aborts an in-flight request when the query changes again', async () => {
     let capturedSignal: AbortSignal | undefined;
-    mockedSearchMovies.mockImplementation((_query, signal) => {
+    mockedSearchMovies.mockImplementation((_query, _page, signal) => {
       capturedSignal = signal;
       return new Promise(() => {});
     });
 
-    const { rerender } = renderHook(({ query }) => useMovieSearch(query), {
+    const { rerender } = renderHook(({ query }) => useMovieSearch(query, 1), {
       initialProps: { query: 'batman' },
     });
 
@@ -80,22 +86,46 @@ describe('useMovieSearch', () => {
     expect(capturedSignal?.aborted).toBe(true);
   });
 
-  it('sets movies on a successful search', async () => {
-    mockedSearchMovies.mockResolvedValue([movie]);
+  it('re-fetches when the page changes', async () => {
+    mockedSearchMovies.mockResolvedValue({ movies: [movie], page: 2, totalPages: 3 });
 
-    const { result } = renderHook(() => useMovieSearch('batman'));
+    const { rerender } = renderHook(({ page }) => useMovieSearch('batman', page), {
+      initialProps: { page: 1 },
+    });
+
+    act(() => {
+      rerender({ page: 2 });
+    });
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(350);
     });
 
-    expect(result.current).toEqual({ movies: [movie], loading: false, error: null });
+    expect(mockedSearchMovies).toHaveBeenCalledWith('batman', 2, expect.any(AbortSignal));
+  });
+
+  it('sets movies and pagination info on a successful search', async () => {
+    mockedSearchMovies.mockResolvedValue({ movies: [movie], page: 1, totalPages: 4 });
+
+    const { result } = renderHook(() => useMovieSearch('batman', 1));
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(350);
+    });
+
+    expect(result.current).toEqual({
+      movies: [movie],
+      loading: false,
+      error: null,
+      page: 1,
+      totalPages: 4,
+    });
   });
 
   it('sets an error message when the search fails', async () => {
     mockedSearchMovies.mockRejectedValue(new Error('TMDB request failed: 500'));
 
-    const { result } = renderHook(() => useMovieSearch('batman'));
+    const { result } = renderHook(() => useMovieSearch('batman', 1));
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(350);
@@ -105,6 +135,8 @@ describe('useMovieSearch', () => {
       movies: [],
       loading: false,
       error: 'TMDB request failed: 500',
+      page: 1,
+      totalPages: 1,
     });
   });
 });
