@@ -44,7 +44,7 @@ describe('MovieDetailPage', () => {
 
     renderPage();
 
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: /loading movie details/i })).toBeInTheDocument();
   });
 
   it('shows an error message', () => {

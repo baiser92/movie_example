@@ -366,6 +366,11 @@ a {
   align-items: flex-start;
 }
 
+.detail .content {
+  flex: 1;
+  min-width: 0;
+}
+
 .detail-poster {
   position: relative;
   width: 280px;
@@ -495,6 +500,73 @@ a {
 .cast-character {
   font-size: 11px;
   color: var(--text-muted);
+}
+
+.skeleton-block {
+  background: linear-gradient(
+    90deg,
+    var(--surface-2) 25%,
+    var(--surface-3) 37%,
+    var(--surface-2) 63%
+  );
+  background-size: 400% 100%;
+  animation: skeleton-shimmer 1.4s ease infinite;
+  border-radius: 8px;
+}
+
+.skeleton-line {
+  height: 14px;
+  margin-top: 10px;
+}
+
+.skeleton-line--short {
+  width: 60%;
+}
+
+.skeleton-line--title {
+  height: 32px;
+  width: 70%;
+  margin-top: 0;
+}
+
+.skeleton-line--tagline {
+  height: 17px;
+  width: 45%;
+}
+
+.skeleton-line--meta {
+  height: 14px;
+  width: 35%;
+  margin-top: 16px;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-block {
+    animation: none;
+  }
+}
+
+.error-boundary {
+  margin: 64px 0;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.error-boundary h1 {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 28px;
+  color: var(--text);
 }
 
 footer {

@@ -1,4 +1,5 @@
-import { Link, NavLink, Route, Routes } from 'react-router-dom';
+import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom';
+import ErrorBoundary from './components/ErrorBoundary';
 import FavoritesPage from './pages/FavoritesPage';
 import Home from './pages/Home';
 import MovieDetailPage from './pages/MovieDetailPage';
@@ -10,6 +11,7 @@ function navLinkClassName({ isActive }: { isActive: boolean }) {
 
 export default function App() {
   const { favorites } = useFavorites();
+  const location = useLocation();
 
   return (
     <main className="container">
@@ -31,11 +33,13 @@ export default function App() {
         </nav>
       </header>
 
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/movie/:id" element={<MovieDetailPage />} />
-        <Route path="/favorites" element={<FavoritesPage />} />
-      </Routes>
+      <ErrorBoundary key={location.pathname}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/movie/:id" element={<MovieDetailPage />} />
+          <Route path="/favorites" element={<FavoritesPage />} />
+        </Routes>
+      </ErrorBoundary>
 
       <footer>TMDB API</footer>
     </main>

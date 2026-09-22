@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import MovieList from '../components/MovieList';
+import MovieListSkeleton from '../components/MovieListSkeleton';
 import Pagination from '../components/Pagination';
 import { useMovieSearch } from '../hooks/useMovieSearch';
 
@@ -35,7 +36,7 @@ export default function Home() {
         </div>
       </section>
 
-      {loading && <p>Searching...</p>}
+      {loading && <MovieListSkeleton />}
       {error && (
         <p className="error" role="alert">
           {error}

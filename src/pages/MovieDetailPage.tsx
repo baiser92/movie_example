@@ -1,4 +1,5 @@
 import { Link, useParams } from 'react-router-dom';
+import MovieDetailSkeleton from '../components/MovieDetailSkeleton';
 import { useMovieDetails } from '../hooks/useMovieDetails';
 
 function getInitials(name: string): string {
@@ -20,7 +21,7 @@ export default function MovieDetailPage() {
         ← Back to search
       </Link>
 
-      {loading && <p>Loading...</p>}
+      {loading && <MovieDetailSkeleton />}
       {error && (
         <p className="error" role="alert">
           {error}
