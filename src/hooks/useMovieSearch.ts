@@ -8,6 +8,8 @@ type SearchState = {
   error: string | null;
 };
 
+const DEBOUNCE_MS = 350;
+
 export function useMovieSearch(query: string): SearchState {
   const [state, setState] = useState<SearchState>({
     movies: [],
@@ -23,39 +25,35 @@ export function useMovieSearch(query: string): SearchState {
       return;
     }
 
-    let active = true;
+    const controller = new AbortController();
 
-    async function loadMovies() {
-      setState((current) => ({
-        ...current,
-        loading: true,
-        error: null
-      }));
+    setState((current) => ({
+      ...current,
+      loading: true,
+      error: null
+    }));
 
+    const timeoutId = window.setTimeout(async () => {
       try {
-        const movies = await searchMovies(normalizedQuery);
-
-        if (active) {
-          setState({ movies, loading: false, error: null });
-        }
+        const movies = await searchMovies(normalizedQuery, controller.signal);
+        setState({ movies, loading: false, error: null });
       } catch (error) {
-        if (active) {
-          setState({
-            movies: [],
-            loading: false,
-            error:
-              error instanceof Error
-                ? error.message
-                : "Something went wrong."
-          });
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
         }
-      }
-    }
 
-    loadMovies();
+        setState({
+          movies: [],
+          loading: false,
+          error:
+            error instanceof Error ? error.message : "Something went wrong."
+        });
+      }
+    }, DEBOUNCE_MS);
 
     return () => {
-      active = false;
+      window.clearTimeout(timeoutId);
+      controller.abort();
     };
   }, [query]);
 

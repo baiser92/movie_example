@@ -1,21 +1,17 @@
-import { vi, describe, it, expect, beforeEach } from 'vitest'
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { searchMovies } from '../tmdb'
 
 beforeEach(() => {
-  // clear localStorage and reset fetch mock
-  if (typeof window !== 'undefined' && window.localStorage) {
-    window.localStorage.clear()
-  }
-  // @ts-ignore
-  global.fetch = undefined
+  vi.stubEnv('VITE_TMDB_ACCESS_TOKEN', 'fake-token')
+})
+
+afterEach(() => {
+  vi.unstubAllEnvs()
+  vi.restoreAllMocks()
 })
 
 describe('tmdb api', () => {
-  it('uses token from localStorage and returns mapped movies', async () => {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      window.localStorage.setItem('VITE_TMDB_ACCESS_TOKEN', 'fake-token')
-    }
-
+  it('sends the auth token and returns mapped movies', async () => {
     const mockResponse = {
       results: [
         {
@@ -29,13 +25,36 @@ describe('tmdb api', () => {
       ],
     }
 
-    global.fetch = vi.fn(() =>
+    const fetchMock = vi.fn(() =>
       Promise.resolve({ ok: true, json: () => Promise.resolve(mockResponse) })
-    ) as any
+    ) as unknown as typeof fetch
+    vi.stubGlobal('fetch', fetchMock)
 
     const movies = await searchMovies('x')
+
     expect(movies).toHaveLength(1)
     expect(movies[0].id).toBe(100)
-    expect(global.fetch).toHaveBeenCalled()
+    expect(movies[0].posterPath).toBe('https://image.tmdb.org/t/p/w500/abc.jpg')
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.any(URL),
+      expect.objectContaining({
+        headers: { Authorization: 'Bearer fake-token' },
+      })
+    )
+  })
+
+  it('throws a descriptive error when the token is missing', async () => {
+    vi.stubEnv('VITE_TMDB_ACCESS_TOKEN', '')
+
+    await expect(searchMovies('x')).rejects.toThrow(/VITE_TMDB_ACCESS_TOKEN/)
+  })
+
+  it('throws when the response is not ok', async () => {
+    const fetchMock = vi.fn(() =>
+      Promise.resolve({ ok: false, status: 401 })
+    ) as unknown as typeof fetch
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(searchMovies('x')).rejects.toThrow('TMDB request failed: 401')
   })
 })
