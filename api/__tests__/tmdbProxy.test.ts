@@ -72,6 +72,60 @@ describe('proxyTmdb', () => {
     );
   });
 
+  it.each([
+    'trending/movie/week?page=2',
+    'movie/popular?page=1',
+    'movie/now_playing',
+    'genre/movie/list?language=en-US',
+    'discover/movie?with_genres=28&sort_by=popularity.desc',
+  ])('allows the browse endpoint %s', async (path) => {
+    const fetchMock = upstreamOk();
+
+    const response = await proxyTmdb(
+      makeRequest(path),
+      'secret',
+      fetchMock as unknown as typeof fetch,
+    );
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledWith(
+      `https://api.themoviedb.org/3/${path}`,
+      expect.any(Object),
+    );
+  });
+
+  it('forwards every discover filter the app uses', async () => {
+    const fetchMock = upstreamOk();
+    const search =
+      'language=en-US&include_adult=false&page=2&sort_by=vote_average.desc&with_genres=28&primary_release_year=2020&vote_average.gte=7&vote_count.gte=200';
+
+    await proxyTmdb(
+      makeRequest(`discover/movie?${search}`),
+      'secret',
+      fetchMock as unknown as typeof fetch,
+    );
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      `https://api.themoviedb.org/3/discover/movie?${search}`,
+      expect.any(Object),
+    );
+  });
+
+  it('drops query params that are not allowed for the route', async () => {
+    const fetchMock = upstreamOk();
+
+    await proxyTmdb(
+      makeRequest('discover/movie?with_genres=28&with_keywords=1&api_key=x'),
+      'secret',
+      fetchMock as unknown as typeof fetch,
+    );
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.themoviedb.org/3/discover/movie?with_genres=28',
+      expect.any(Object),
+    );
+  });
+
   it('sets cache headers on successful responses', async () => {
     const response = await proxyTmdb(
       makeRequest('movie/42'),
@@ -82,21 +136,28 @@ describe('proxyTmdb', () => {
     expect(response.headers.get('Cache-Control')).toContain('s-maxage=3600');
   });
 
-  it.each(['account', 'movie/abc', 'movie/42/credits', 'search/tv', '../account'])(
-    'rejects paths that are not on the allowlist (%s) without calling TMDB',
-    async (path) => {
-      const fetchMock = upstreamOk();
+  it.each([
+    'account',
+    'movie/abc',
+    'movie/42/credits',
+    'search/tv',
+    'trending/movie/day',
+    'trending/tv/week',
+    'discover/tv',
+    'movie/top_rated',
+    '../account',
+  ])('rejects paths that are not on the allowlist (%s) without calling TMDB', async (path) => {
+    const fetchMock = upstreamOk();
 
-      const response = await proxyTmdb(
-        makeRequest(path),
-        'secret',
-        fetchMock as unknown as typeof fetch,
-      );
+    const response = await proxyTmdb(
+      makeRequest(path),
+      'secret',
+      fetchMock as unknown as typeof fetch,
+    );
 
-      expect(response.status).toBe(404);
-      expect(fetchMock).not.toHaveBeenCalled();
-    },
-  );
+    expect(response.status).toBe(404);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 
   it('rejects non-GET methods', async () => {
     const fetchMock = upstreamOk();

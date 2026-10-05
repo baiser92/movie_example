@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-export const movieSearchResponseSchema = z.object({
+// Search, trending, popular, now playing and discover all return this same paginated shape.
+export const movieListResponseSchema = z.object({
   page: z.number(),
   total_pages: z.number(),
   results: z.array(
@@ -13,6 +14,12 @@ export const movieSearchResponseSchema = z.object({
       vote_average: z.number(),
     }),
   ),
+});
+
+export const movieSearchResponseSchema = movieListResponseSchema;
+
+export const genreListResponseSchema = z.object({
+  genres: z.array(z.object({ id: z.number(), name: z.string() })),
 });
 
 export const movieDetailResponseSchema = z.object({

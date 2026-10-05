@@ -16,6 +16,11 @@ export type MovieSearchResult = {
   totalPages: number;
 };
 
+export type Genre = {
+  id: number;
+  name: string;
+};
+
 export type MovieSearchResponse = z.infer<typeof movieSearchResponseSchema>;
 
 export type CastMember = {

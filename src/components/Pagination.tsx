@@ -10,7 +10,7 @@ export default function Pagination({ page, totalPages, onPageChange }: Paginatio
   }
 
   return (
-    <nav className="pagination" aria-label="Search results pages">
+    <nav className="pagination" aria-label="Results pages">
       <button type="button" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
         ← Prev
       </button>
