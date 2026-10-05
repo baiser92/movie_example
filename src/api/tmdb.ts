@@ -1,6 +1,11 @@
 import { z } from 'zod';
-import { MovieDetail, MovieSearchResult } from '../types/movie';
-import { movieDetailResponseSchema, movieSearchResponseSchema } from './schemas';
+import { DiscoverFilters } from '../lib/browseParams';
+import { Genre, Movie, MovieDetail, MovieSearchResult } from '../types/movie';
+import {
+  genreListResponseSchema,
+  movieDetailResponseSchema,
+  movieListResponseSchema,
+} from './schemas';
 
 // Requests go through our own serverless proxy (api/tmdb), which holds the TMDB token.
 const BASE_URL = '/api/tmdb';
@@ -33,31 +38,92 @@ async function tmdbFetch<T>(url: URL, schema: z.ZodType<T>, signal?: AbortSignal
   return result.data;
 }
 
+type MovieListResponse = z.infer<typeof movieListResponseSchema>;
+
+function toMovie(movie: MovieListResponse['results'][number]): Movie {
+  return {
+    id: movie.id,
+    title: movie.title,
+    overview: movie.overview,
+    posterPath: movie.poster_path ? `${IMAGE_BASE_URL}${movie.poster_path}` : null,
+    releaseDate: movie.release_date,
+    rating: movie.vote_average,
+  };
+}
+
+async function fetchMovieList(
+  path: string,
+  params: Record<string, string>,
+  signal?: AbortSignal,
+): Promise<MovieSearchResult> {
+  const url = new URL(`${BASE_URL}/${path}`, window.location.origin);
+  url.searchParams.set('language', 'en-US');
+  for (const [key, value] of Object.entries(params)) {
+    url.searchParams.set(key, value);
+  }
+
+  const data = await tmdbFetch(url, movieListResponseSchema, signal);
+
+  return { movies: data.results.map(toMovie), page: data.page, totalPages: data.total_pages };
+}
+
 export async function searchMovies(
   query: string,
   page = 1,
   signal?: AbortSignal,
 ): Promise<MovieSearchResult> {
-  const url = new URL(`${BASE_URL}/search/movie`, window.location.origin);
-  url.searchParams.set('query', query);
-  url.searchParams.set('language', 'en-US');
-  url.searchParams.set('include_adult', 'false');
-  url.searchParams.set('page', String(page));
+  return fetchMovieList(
+    'search/movie',
+    { query, include_adult: 'false', page: String(page) },
+    signal,
+  );
+}
 
-  const data = await tmdbFetch(url, movieSearchResponseSchema, signal);
+const LIST_PATHS = {
+  trending: 'trending/movie/week',
+  popular: 'movie/popular',
+  now_playing: 'movie/now_playing',
+} as const;
 
-  return {
-    movies: data.results.map((movie) => ({
-      id: movie.id,
-      title: movie.title,
-      overview: movie.overview,
-      posterPath: movie.poster_path ? `${IMAGE_BASE_URL}${movie.poster_path}` : null,
-      releaseDate: movie.release_date,
-      rating: movie.vote_average,
-    })),
-    page: data.page,
-    totalPages: data.total_pages,
+export function getMovieList(
+  kind: keyof typeof LIST_PATHS,
+  page = 1,
+  signal?: AbortSignal,
+): Promise<MovieSearchResult> {
+  return fetchMovieList(LIST_PATHS[kind], { page: String(page) }, signal);
+}
+
+// Sorting by rating alone surfaces obscure titles with a handful of votes, so require a floor.
+const MIN_VOTES_WHEN_SORTING_BY_RATING = '200';
+
+export function discoverMovies(
+  filters: DiscoverFilters,
+  page = 1,
+  signal?: AbortSignal,
+): Promise<MovieSearchResult> {
+  const params: Record<string, string> = {
+    include_adult: 'false',
+    page: String(page),
+    sort_by: filters.sort,
   };
+
+  if (filters.genre !== null) params.with_genres = String(filters.genre);
+  if (filters.year !== null) params.primary_release_year = String(filters.year);
+  if (filters.rating !== null) params['vote_average.gte'] = String(filters.rating);
+  if (filters.sort === 'vote_average.desc') {
+    params['vote_count.gte'] = MIN_VOTES_WHEN_SORTING_BY_RATING;
+  }
+
+  return fetchMovieList('discover/movie', params, signal);
+}
+
+export async function getGenres(signal?: AbortSignal): Promise<Genre[]> {
+  const url = new URL(`${BASE_URL}/genre/movie/list`, window.location.origin);
+  url.searchParams.set('language', 'en-US');
+
+  const data = await tmdbFetch(url, genreListResponseSchema, signal);
+
+  return data.genres;
 }
 
 export async function getMovieDetails(

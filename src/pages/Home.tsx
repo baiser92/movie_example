@@ -1,27 +1,40 @@
 import { useSearchParams } from 'react-router-dom';
+import BrowseTabs from '../components/BrowseTabs';
+import DiscoverFilters from '../components/DiscoverFilters';
 import MovieList from '../components/MovieList';
 import MovieListSkeleton from '../components/MovieListSkeleton';
 import Pagination from '../components/Pagination';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { useMovieBrowse } from '../hooks/useMovieBrowse';
 import { useMovieSearch } from '../hooks/useMovieSearch';
+import { BrowseParams, buildBrowseSearch, parseBrowseParams } from '../lib/browseParams';
 
 const DEBOUNCE_MS = 350;
-
-function parsePage(value: string | null): number {
-  const page = Number(value);
-  return Number.isInteger(page) && page >= 1 ? page : 1;
-}
 
 export default function Home() {
   const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get('q') ?? '';
-  const page = parsePage(searchParams.get('page'));
+  const browse = parseBrowseParams(searchParams);
+  const { page } = browse;
   const debouncedQuery = useDebouncedValue(query, DEBOUNCE_MS);
-  const { movies, loading, error, totalPages } = useMovieSearch(debouncedQuery, page);
+  // Search and the browse tabs/filters are mutually exclusive: /search/movie accepts no filters.
+  const searching = query.trim() !== '';
+  const waitingForDebounce = searching && debouncedQuery.trim() === '';
+  const search = useMovieSearch(debouncedQuery, page);
+  const browsing = useMovieBrowse(browse, !searching);
+  const { movies, loading, error, totalPages } = searching ? search : browsing;
 
-  // Typing replaces the history entry so Back does not step through every keystroke.
+  // Typing replaces the history entry so Back does not step through every keystroke. The tab and
+  // filters stay in the URL so clearing the input returns to where the user was.
   function handleQueryChange(value: string) {
-    setSearchParams(value ? { q: value } : {}, { replace: true });
+    const next = new URLSearchParams(searchParams);
+    next.delete('page');
+    if (value) {
+      next.set('q', value);
+    } else {
+      next.delete('q');
+    }
+    setSearchParams(next, { replace: true });
   }
 
   // Paging pushes an entry so Back returns to the previous page of results.
@@ -33,6 +46,11 @@ export default function Home() {
       next.delete('page');
     }
     setSearchParams(next);
+  }
+
+  // Switching tab is navigation (push); tweaking a filter refines the same view (replace).
+  function handleBrowseChange(change: Partial<BrowseParams>, replace: boolean) {
+    setSearchParams(buildBrowseSearch({ ...browse, ...change, page: 1 }), { replace });
   }
 
   return (
@@ -57,13 +75,28 @@ export default function Home() {
         </div>
       </section>
 
-      {loading && <MovieListSkeleton />}
+      {!searching && (
+        <>
+          <BrowseTabs
+            active={browse.list}
+            onChange={(list) => handleBrowseChange({ list }, false)}
+          />
+          {browse.list === 'discover' && (
+            <DiscoverFilters
+              filters={browse.filters}
+              onChange={(filters) => handleBrowseChange({ filters }, true)}
+            />
+          )}
+        </>
+      )}
+
+      {(loading || waitingForDebounce) && <MovieListSkeleton />}
       {error && (
         <p className="error" role="alert">
           {error}
         </p>
       )}
-      {!loading && !error && (
+      {!loading && !waitingForDebounce && !error && (
         <>
           <MovieList movies={movies} />
           <Pagination page={page} totalPages={totalPages} onPageChange={handlePageChange} />

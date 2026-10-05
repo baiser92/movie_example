@@ -1,7 +1,32 @@
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 
+type AllowedRoute = {
+  path: RegExp;
+  // Query params forwarded to TMDB; anything else is dropped so callers cannot widen the request.
+  params: readonly string[];
+};
+
 // Only the TMDB endpoints the app actually uses are reachable through the proxy.
-const ALLOWED_PATHS = [/^search\/movie$/, /^movie\/\d+$/];
+const ALLOWED_ROUTES: readonly AllowedRoute[] = [
+  { path: /^search\/movie$/, params: ['query', 'language', 'include_adult', 'page'] },
+  { path: /^movie\/\d+$/, params: ['language', 'append_to_response'] },
+  { path: /^trending\/movie\/week$/, params: ['language', 'page'] },
+  { path: /^movie\/(popular|now_playing)$/, params: ['language', 'page'] },
+  { path: /^genre\/movie\/list$/, params: ['language'] },
+  {
+    path: /^discover\/movie$/,
+    params: [
+      'language',
+      'include_adult',
+      'page',
+      'sort_by',
+      'with_genres',
+      'primary_release_year',
+      'vote_average.gte',
+      'vote_count.gte',
+    ],
+  },
+];
 
 const CACHE_CONTROL = 'public, s-maxage=3600, stale-while-revalidate=86400';
 
@@ -30,14 +55,24 @@ export async function proxyTmdb(
   const path = url.searchParams.get('path') ?? url.pathname.replace(/^\/api\/tmdb\//, '');
   url.searchParams.delete('path');
 
-  if (!ALLOWED_PATHS.some((pattern) => pattern.test(path))) {
+  const route = ALLOWED_ROUTES.find((candidate) => candidate.path.test(path));
+
+  if (!route) {
     return json({ error: 'Not found' }, 404);
   }
+
+  const forwarded = new URLSearchParams();
+  url.searchParams.forEach((value, key) => {
+    if (route.params.includes(key)) {
+      forwarded.append(key, value);
+    }
+  });
+  const search = forwarded.size > 0 ? `?${forwarded}` : '';
 
   let upstream: Response;
 
   try {
-    upstream = await fetchImpl(`${TMDB_BASE_URL}/${path}${url.search}`, {
+    upstream = await fetchImpl(`${TMDB_BASE_URL}/${path}${search}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
   } catch {
