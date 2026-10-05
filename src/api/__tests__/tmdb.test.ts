@@ -1,17 +1,12 @@
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { vi, describe, it, expect, afterEach } from 'vitest';
 import { getMovieDetails, searchMovies } from '../tmdb';
 
-beforeEach(() => {
-  vi.stubEnv('VITE_TMDB_ACCESS_TOKEN', 'fake-token');
-});
-
 afterEach(() => {
-  vi.unstubAllEnvs();
   vi.restoreAllMocks();
 });
 
 describe('searchMovies', () => {
-  it('sends the auth token, the page, and returns mapped movies with pagination info', async () => {
+  it('calls the proxy without credentials, sends the page, and returns mapped movies with pagination info', async () => {
     const mockResponse = {
       page: 1,
       total_pages: 5,
@@ -39,18 +34,11 @@ describe('searchMovies', () => {
     expect(result.movies[0].posterPath).toBe('https://image.tmdb.org/t/p/w500/abc.jpg');
     expect(result.page).toBe(1);
     expect(result.totalPages).toBe(5);
-    expect(fetchMock).toHaveBeenCalledWith(
-      expect.objectContaining({ search: expect.stringContaining('page=1') }),
-      expect.objectContaining({
-        headers: { Authorization: 'Bearer fake-token' },
-      }),
-    );
-  });
-
-  it('throws a descriptive error when the token is missing', async () => {
-    vi.stubEnv('VITE_TMDB_ACCESS_TOKEN', '');
-
-    await expect(searchMovies('x', 1)).rejects.toThrow(/VITE_TMDB_ACCESS_TOKEN/);
+    const [calledUrl, options] = (fetchMock as unknown as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(calledUrl.pathname).toBe('/api/tmdb/search/movie');
+    expect(calledUrl.searchParams.get('page')).toBe('1');
+    expect(calledUrl.searchParams.get('query')).toBe('x');
+    expect(options).not.toHaveProperty('headers');
   });
 
   it('throws when the response is not ok', async () => {
@@ -106,6 +94,10 @@ describe('getMovieDetails', () => {
     expect(movie.genres).toEqual(['Drama']);
     expect(movie.cast).toEqual([{ id: 1, name: 'Actor One', character: 'Role One' }]);
     expect(movie.runtime).toBe(120);
+
+    const [calledUrl] = (fetchMock as unknown as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(calledUrl.pathname).toBe('/api/tmdb/movie/42');
+    expect(calledUrl.searchParams.get('append_to_response')).toBe('credits');
   });
 
   it('throws when the response is not ok', async () => {

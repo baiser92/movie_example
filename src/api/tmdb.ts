@@ -2,28 +2,12 @@ import { z } from 'zod';
 import { MovieDetail, MovieSearchResult } from '../types/movie';
 import { movieDetailResponseSchema, movieSearchResponseSchema } from './schemas';
 
-const BASE_URL = 'https://api.themoviedb.org/3';
+// Requests go through our own serverless proxy (api/tmdb), which holds the TMDB token.
+const BASE_URL = '/api/tmdb';
 const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
 
-function getToken(): string {
-  const token = import.meta.env.VITE_TMDB_ACCESS_TOKEN;
-
-  if (!token) {
-    throw new Error(
-      'Missing VITE_TMDB_ACCESS_TOKEN. Set it in a .env file (VITE_TMDB_ACCESS_TOKEN=...) and restart the dev server.',
-    );
-  }
-
-  return token;
-}
-
 async function tmdbFetch<T>(url: URL, schema: z.ZodType<T>, signal?: AbortSignal): Promise<T> {
-  const response = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${getToken()}`,
-    },
-    signal,
-  });
+  const response = await fetch(url, { signal });
 
   if (!response.ok) {
     throw new Error(`TMDB request failed: ${response.status}`);
@@ -44,7 +28,7 @@ export async function searchMovies(
   page = 1,
   signal?: AbortSignal,
 ): Promise<MovieSearchResult> {
-  const url = new URL(`${BASE_URL}/search/movie`);
+  const url = new URL(`${BASE_URL}/search/movie`, window.location.origin);
   url.searchParams.set('query', query);
   url.searchParams.set('language', 'en-US');
   url.searchParams.set('include_adult', 'false');
@@ -70,7 +54,7 @@ export async function getMovieDetails(
   id: string | number,
   signal?: AbortSignal,
 ): Promise<MovieDetail> {
-  const url = new URL(`${BASE_URL}/movie/${id}`);
+  const url = new URL(`${BASE_URL}/movie/${id}`, window.location.origin);
   url.searchParams.set('language', 'en-US');
   url.searchParams.set('append_to_response', 'credits');
 

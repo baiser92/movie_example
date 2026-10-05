@@ -30,7 +30,7 @@ cp .env.example .env
 ```
 
 ```env
-VITE_TMDB_ACCESS_TOKEN=your_token_here
+TMDB_ACCESS_TOKEN=your_token_here
 ```
 
 3. Install and run:
@@ -49,7 +49,8 @@ npm run dev
 
 ## Architecture
 
-- `api/` — external API communication
+- `api/` — serverless proxy that holds the TMDB token (Vercel Functions)
+- `src/api/` — client-side API layer (typed, zod-validated)
 - `components/` — reusable UI components
 - `hooks/` — data-fetching/state logic
 - `pages/` — route-level views
@@ -60,4 +61,6 @@ The API layer is kept separate from the UI so the data source can be replaced wi
 
 ## Trade-offs
 
-This is a client-only app: it calls the TMDB API directly from the browser using a `VITE_`-prefixed token, which Vite inlines into the public JS bundle at build time. That's fine for a read-only, non-commercial TMDB token (worst case someone burns your request quota), but it's not a pattern to reuse for a token that grants write access or costs money per request. A production app with a paid or sensitive API key would proxy the request through a backend (e.g. a serverless function) so the key never reaches the client.
+The TMDB token never reaches the browser. The client calls `/api/tmdb/...`, a Vercel serverless function (`api/tmdb/[...path].ts`) that adds the `Authorization` header server-side, only allows the endpoints the app uses (`search/movie`, `movie/:id`), and sets cache headers. In local development, `vite.config.ts` proxies `/api/tmdb` to TMDB with the same header.
+
+The proxy itself is public (anyone can call the allowed endpoints), so a production app would also add rate limiting, for example per IP.
