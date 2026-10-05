@@ -26,7 +26,9 @@ export async function proxyTmdb(
   }
 
   const url = new URL(request.url);
-  const path = url.pathname.replace(/^\/api\/tmdb\//, '');
+  // On Vercel the rewrite passes the target path as ?path=...; the pathname is the fallback.
+  const path = url.searchParams.get('path') ?? url.pathname.replace(/^\/api\/tmdb\//, '');
+  url.searchParams.delete('path');
 
   if (!ALLOWED_PATHS.some((pattern) => pattern.test(path))) {
     return json({ error: 'Not found' }, 404);

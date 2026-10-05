@@ -27,6 +27,35 @@ describe('proxyTmdb', () => {
     expect(await response.json()).toEqual({ results: [] });
   });
 
+  it('reads the target path from the ?path= param set by the Vercel rewrite', async () => {
+    const fetchMock = upstreamOk();
+
+    const response = await proxyTmdb(
+      new Request('https://example.com/api/tmdb?path=search/movie&query=matrix'),
+      'secret',
+      fetchMock as unknown as typeof fetch,
+    );
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.themoviedb.org/3/search/movie?query=matrix',
+      expect.any(Object),
+    );
+  });
+
+  it('rejects a rewrite request without a path', async () => {
+    const fetchMock = upstreamOk();
+
+    const response = await proxyTmdb(
+      new Request('https://example.com/api/tmdb?path='),
+      'secret',
+      fetchMock as unknown as typeof fetch,
+    );
+
+    expect(response.status).toBe(404);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('allows movie detail requests', async () => {
     const fetchMock = upstreamOk();
 
