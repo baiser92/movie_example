@@ -6,11 +6,21 @@ import { movieDetailResponseSchema, movieSearchResponseSchema } from './schemas'
 const BASE_URL = '/api/tmdb';
 const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
 
+export class TmdbError extends Error {
+  readonly status: number;
+
+  constructor(status: number) {
+    super(`TMDB request failed: ${status}`);
+    this.name = 'TmdbError';
+    this.status = status;
+  }
+}
+
 async function tmdbFetch<T>(url: URL, schema: z.ZodType<T>, signal?: AbortSignal): Promise<T> {
   const response = await fetch(url, { signal });
 
   if (!response.ok) {
-    throw new Error(`TMDB request failed: ${response.status}`);
+    throw new TmdbError(response.status);
   }
 
   const json = await response.json();

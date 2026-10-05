@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { searchMovies } from '../api/tmdb';
+import { useQuery } from '@tanstack/react-query';
+import { searchQueryOptions } from '../api/queries';
 import { Movie } from '../types/movie';
 
 type SearchState = {
@@ -10,65 +10,22 @@ type SearchState = {
   totalPages: number;
 };
 
-const DEBOUNCE_MS = 350;
-
-const INITIAL_STATE: SearchState = {
-  movies: [],
-  loading: false,
-  error: null,
-  page: 1,
-  totalPages: 1,
-};
+const EMPTY: Movie[] = [];
 
 export function useMovieSearch(query: string, page: number): SearchState {
-  const [state, setState] = useState<SearchState>(INITIAL_STATE);
+  const normalizedQuery = query.trim();
+  const { data, isLoading, error } = useQuery(searchQueryOptions(normalizedQuery, page));
 
-  useEffect(() => {
-    const normalizedQuery = query.trim();
+  // keepPreviousData would otherwise leave stale results on screen after clearing the input.
+  if (!normalizedQuery) {
+    return { movies: EMPTY, loading: false, error: null, page: 1, totalPages: 1 };
+  }
 
-    if (!normalizedQuery) {
-      setState(INITIAL_STATE);
-      return;
-    }
-
-    const controller = new AbortController();
-
-    setState((current) => ({
-      ...current,
-      loading: true,
-      error: null,
-    }));
-
-    const timeoutId = window.setTimeout(async () => {
-      try {
-        const result = await searchMovies(normalizedQuery, page, controller.signal);
-        setState({
-          movies: result.movies,
-          loading: false,
-          error: null,
-          page: result.page,
-          totalPages: result.totalPages,
-        });
-      } catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') {
-          return;
-        }
-
-        setState({
-          movies: [],
-          loading: false,
-          error: error instanceof Error ? error.message : 'Something went wrong.',
-          page: 1,
-          totalPages: 1,
-        });
-      }
-    }, DEBOUNCE_MS);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-      controller.abort();
-    };
-  }, [query, page]);
-
-  return state;
+  return {
+    movies: data?.movies ?? EMPTY,
+    loading: isLoading,
+    error: error ? error.message || 'Something went wrong.' : null,
+    page: data?.page ?? 1,
+    totalPages: data?.totalPages ?? 1,
+  };
 }

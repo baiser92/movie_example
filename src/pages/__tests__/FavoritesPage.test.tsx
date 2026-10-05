@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
+import { createQueryWrapper } from '../../test/queryWrapper';
 import { beforeEach, describe, expect, it } from 'vitest';
 import FavoritesPage from '../FavoritesPage';
 import { clearFavorites, toggleFavorite } from '../../hooks/useFavorites';
@@ -24,6 +25,7 @@ function renderPage() {
     <MemoryRouter>
       <FavoritesPage />
     </MemoryRouter>,
+    { wrapper: createQueryWrapper() },
   );
 }
 

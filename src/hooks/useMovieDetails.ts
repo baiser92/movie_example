@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { getMovieDetails } from '../api/tmdb';
+import { useQuery } from '@tanstack/react-query';
+import { detailQueryOptions } from '../api/queries';
 import { MovieDetail } from '../types/movie';
 
 type DetailState = {
@@ -9,37 +9,18 @@ type DetailState = {
 };
 
 export function useMovieDetails(id: string | undefined): DetailState {
-  const [state, setState] = useState<DetailState>({
-    movie: null,
-    loading: true,
-    error: null,
+  const { data, isLoading, error } = useQuery({
+    ...detailQueryOptions(id ?? ''),
+    enabled: Boolean(id),
   });
 
-  useEffect(() => {
-    if (!id) {
-      setState({ movie: null, loading: false, error: 'Missing movie id.' });
-      return;
-    }
+  if (!id) {
+    return { movie: null, loading: false, error: 'Missing movie id.' };
+  }
 
-    const controller = new AbortController();
-    setState({ movie: null, loading: true, error: null });
-
-    getMovieDetails(id, controller.signal)
-      .then((movie) => setState({ movie, loading: false, error: null }))
-      .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === 'AbortError') {
-          return;
-        }
-
-        setState({
-          movie: null,
-          loading: false,
-          error: error instanceof Error ? error.message : 'Something went wrong.',
-        });
-      });
-
-    return () => controller.abort();
-  }, [id]);
-
-  return state;
+  return {
+    movie: data ?? null,
+    loading: isLoading,
+    error: error ? error.message || 'Something went wrong.' : null,
+  };
 }

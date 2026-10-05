@@ -1,17 +1,38 @@
-import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import MovieList from '../components/MovieList';
 import MovieListSkeleton from '../components/MovieListSkeleton';
 import Pagination from '../components/Pagination';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { useMovieSearch } from '../hooks/useMovieSearch';
 
-export default function Home() {
-  const [query, setQuery] = useState('');
-  const [page, setPage] = useState(1);
-  const { movies, loading, error, totalPages } = useMovieSearch(query, page);
+const DEBOUNCE_MS = 350;
 
+function parsePage(value: string | null): number {
+  const page = Number(value);
+  return Number.isInteger(page) && page >= 1 ? page : 1;
+}
+
+export default function Home() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const query = searchParams.get('q') ?? '';
+  const page = parsePage(searchParams.get('page'));
+  const debouncedQuery = useDebouncedValue(query, DEBOUNCE_MS);
+  const { movies, loading, error, totalPages } = useMovieSearch(debouncedQuery, page);
+
+  // Typing replaces the history entry so Back does not step through every keystroke.
   function handleQueryChange(value: string) {
-    setQuery(value);
-    setPage(1);
+    setSearchParams(value ? { q: value } : {}, { replace: true });
+  }
+
+  // Paging pushes an entry so Back returns to the previous page of results.
+  function handlePageChange(nextPage: number) {
+    const next = new URLSearchParams(searchParams);
+    if (nextPage > 1) {
+      next.set('page', String(nextPage));
+    } else {
+      next.delete('page');
+    }
+    setSearchParams(next);
   }
 
   return (
@@ -45,7 +66,7 @@ export default function Home() {
       {!loading && !error && (
         <>
           <MovieList movies={movies} />
-          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+          <Pagination page={page} totalPages={totalPages} onPageChange={handlePageChange} />
         </>
       )}
     </>

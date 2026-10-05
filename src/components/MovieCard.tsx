@@ -1,4 +1,6 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { detailQueryOptions } from '../api/queries';
 import { useFavorites } from '../hooks/useFavorites';
 import { Movie } from '../types/movie';
 
@@ -9,6 +11,12 @@ type MovieCardProps = {
 export default function MovieCard({ movie }: MovieCardProps) {
   const { isFavorite, toggleFavorite } = useFavorites();
   const favorite = isFavorite(movie.id);
+  const queryClient = useQueryClient();
+
+  // Warm the cache so the detail page is usually instant; respects staleTime, so repeats are free.
+  function prefetchDetails() {
+    void queryClient.prefetchQuery(detailQueryOptions(movie.id));
+  }
 
   return (
     <article className="card">
@@ -24,7 +32,12 @@ export default function MovieCard({ movie }: MovieCardProps) {
         {favorite ? '★' : '☆'}
       </button>
 
-      <Link to={`/movie/${movie.id}`} className="card-link">
+      <Link
+        to={`/movie/${movie.id}`}
+        className="card-link"
+        onMouseEnter={prefetchDetails}
+        onFocus={prefetchDetails}
+      >
         <div className="poster">
           {movie.posterPath ? (
             <img src={movie.posterPath} alt={`${movie.title} poster`} />
