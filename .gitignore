@@ -12,3 +12,5 @@ pnpm-debug.log*
 coverage/
 /.DS_Store
 .vercel
+playwright-report/
+test-results/
