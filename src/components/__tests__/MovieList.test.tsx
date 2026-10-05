@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { createQueryWrapper } from '../../test/queryWrapper';
 import MovieList from '../MovieList';
 
 const movies = [
@@ -13,6 +14,7 @@ describe('MovieList', () => {
       <MemoryRouter>
         <MovieList movies={[]} />
       </MemoryRouter>,
+      { wrapper: createQueryWrapper() },
     );
     expect(screen.getByText(/No movies found/)).toBeInTheDocument();
   });
@@ -22,6 +24,7 @@ describe('MovieList', () => {
       <MemoryRouter>
         <MovieList movies={movies} />
       </MemoryRouter>,
+      { wrapper: createQueryWrapper() },
     );
     expect(screen.getByRole('heading', { name: 'A' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'B' })).toBeInTheDocument();

@@ -1,5 +1,5 @@
 import { vi, describe, it, expect, afterEach } from 'vitest';
-import { getMovieDetails, searchMovies } from '../tmdb';
+import { TmdbError, getMovieDetails, searchMovies } from '../tmdb';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -48,6 +48,11 @@ describe('searchMovies', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     await expect(searchMovies('x', 1)).rejects.toThrow('TMDB request failed: 401');
+    await expect(searchMovies('x', 1)).rejects.toMatchObject({
+      name: 'TmdbError',
+      status: 401,
+    });
+    await expect(searchMovies('x', 1)).rejects.toBeInstanceOf(TmdbError);
   });
 
   it('throws when the response does not match the expected shape', async () => {
